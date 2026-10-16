@@ -85,6 +85,15 @@ body {
   margin: 1.4em 0 0.4em;
 }
 
+.ProseMirror h1,
+.ProseMirror h2,
+.ProseMirror h3,
+.ProseMirror h4,
+.ProseMirror h5,
+.ProseMirror h6 {
+  scroll-margin-top: 1.25rem;
+}
+
 .ProseMirror h1 {
   font-size: 2rem;
 }
@@ -479,4 +488,97 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
+}
+
+.tool,
+.sidebar-button {
+  border-radius: 0.4rem;
+  padding: 0.3rem 0.55rem;
+  font-size: 0.8rem;
+  color: var(--tool);
+  white-space: nowrap;
+}
+
+.sidebar-button {
+  flex-shrink: 0;
+}
+
+.tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+}
+
+.tool:hover,
+.sidebar-button:hover {
+  background: var(--hover);
+}
+
+.tool:disabled {
+  opacity: 0.4;
+}
+
+.sidebar-button,
+.selected {
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+
+.asset-input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 0.4rem;
+  background: var(--panel);
+  color: var(--ink);
+  padding: 0.3rem 0.45rem;
+}
+
+.sidebar-filter {
+  padding: 0.45rem 0.75rem 0;
+}
+
+.sidebar-body {
+  flex: 1 1 auto;
+  min-height: 6rem;
+  padding: 0.45rem 0.45rem 0.75rem;
+}
+
+.nav-row {
+  display: block;
+  width: 100%;
+  border-radius: 0.4rem;
+  padding: 0.34rem 0.5rem;
+  text-align: left;
+  font-size: 0.82rem;
+  color: var(--ink);
+}
+
+.nav-row:hover {
+  background: var(--hover);
+}
+
+.nav-row.is-current {
+  background: var(--panel);
+  font-weight: 600;
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.search-hit {
+  margin-top: 0.15rem;
+}
+
+.empty-hint {
+  margin: 0.85rem 0.55rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
+.sidebar-tab:focus-visible,
+.nav-row:focus-visible,
+.chip:focus-visible,
+.prefs-button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 70%, transparent);
+  outline-offset: 1px;
 }

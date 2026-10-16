@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createMarkdownEditor, inspectMarkdown, markdownToPlainHtml } from '../src/shared/editor'
 import { searchDocument, searchText } from '../src/shared/find'
-import { outlineFromMarkdown } from '../src/shared/outline'
+import { activeByPosition, outlineFromMarkdown } from '../src/shared/outline'
 import { rememberRecent } from '../src/shared/recent'
 import { shouldOfferRecovery } from '../src/shared/recovery'
 import { classifyExternalChange, sanitizeAssetDir } from '../src/shared/settings'
@@ -12,6 +12,13 @@ describe('outline, find, and source checks', () => {
     const headings = outlineFromMarkdown('# 开始\n\n```\n# 不是标题\n```\n\n## 第二节')
     expect(headings.map((item) => item.text)).toEqual(['开始', '第二节'])
     expect(headings[1]?.level).toBe(2)
+  })
+
+  it('follows the heading that has reached the reading line', () => {
+    expect(activeByPosition([100, 400, 800], 420)).toBe(1)
+    expect(activeByPosition([100, 400, 800], 50)).toBe(0)
+    expect(activeByPosition([100, 400, 800], 900)).toBe(2)
+    expect(activeByPosition([], 50)).toBe(-1)
   })
 
   it('finds case, whole words, and reports a broken regular expression', () => {

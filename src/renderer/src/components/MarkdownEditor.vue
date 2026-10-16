@@ -2,12 +2,13 @@
 import { Diagram, FootnoteDefinition, FootnoteReference, FrontMatter, HtmlBlock, MathBlock, MathInline } from '@shared/blocks'
 import { editorExtensions } from '@shared/editor'
 import { searchDocument, type FindOptions, type TextSpan } from '@shared/find'
+import { activeByPosition } from '@shared/outline'
 import { collectImageFiles, collectImageFilesFromDataTransfer, dataTransferHasFiles, dataTransferHasImage } from '@shared/images'
 import type { Editor } from '@tiptap/core'
 import { visibleDocumentText } from '@shared/stats'
 import Image from '@tiptap/extension-image'
 import { EditorContent, useEditor, VueNodeViewRenderer } from '@tiptap/vue-3'
-import { ref, watch } from 'vue'
+import { onBeforeUnmount, ref, watch } from 'vue'
 import DiagramView from './DiagramView.vue'
 import FrontMatterView from './FrontMatterView.vue'
 import HtmlBlockView from './HtmlBlockView.vue'
@@ -24,6 +25,8 @@ const zoomedImage = ref('')
 const draggingImage = ref(false)
 const dropHandledAt = ref(0)
 const session = useSessionStore()
+let outlineFrame = 0
+let outlineScroller: HTMLElement | null = null
 const emit = defineEmits<{
   ready: []
 }>()
@@ -153,6 +156,9 @@ const editor = useEditor({
   },
   onCreate: ({ editor: current }) => {
     session.rememberBody(visibleDocumentText(current.state.doc))
+    outlineScroller = current.view.dom.closest('.editor-scroll')
+    outlineScroller?.addEventListener('scroll', scheduleOutlineSync, { passive: true })
+    scheduleOutlineSync()
   },
   onUpdate: ({ editor: current }) => {
     session.noteEditorMarkdown(current.getMarkdown())
@@ -178,6 +184,32 @@ watch(
   }
 )
 
+function scheduleOutlineSync(): void {
+  cancelAnimationFrame(outlineFrame)
+  outlineFrame = requestAnimationFrame(() => {
+    const current = editor.value
+    if (current) syncOutline(current)
+  })
+}
+
+function syncOutline(current: Editor): void {
+  const scroller = outlineScroller ?? current.view.dom.closest('.editor-scroll')
+  if (!(scroller instanceof HTMLElement)) return
+  const box = scroller.getBoundingClientRect()
+  const atBottom = scroller.scrollTop > 0 && scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 4
+  const marker = props.typewriter ? box.top + box.height / 2 : atBottom ? box.bottom - 8 : box.top + 72
+  const tops: number[] = []
+  current.state.doc.descendants((node, pos) => {
+    if (node.type.name !== 'heading') return
+    const dom = current.view.nodeDOM(pos)
+    const element = dom instanceof HTMLElement ? dom : dom?.parentElement
+    if (element instanceof HTMLElement) tops.push(element.getBoundingClientRect().top)
+  })
+  if (tops.length === 0) return
+  const index = activeByPosition(tops, marker)
+  if (index !== session.outlineIndex) session.setOutlineIndex(index)
+}
+
 function headingIndex(current: Editor): number {
   let index = -1
   let seen = -1
@@ -195,6 +227,7 @@ function load(markdown: string): void {
   if (!current) return
   current.commands.setContent(markdown, { contentType: 'markdown', emitUpdate: false })
   session.rememberBody(visibleDocumentText(current.state.doc))
+  scheduleOutlineSync()
 }
 
 const IMAGE_NAME_CLEAN = /\.(png|jpe?g|gif|webp)$/i
@@ -290,8 +323,13 @@ function focusHeading(index: number): void {
   current.chain().focus().setTextSelection(target).scrollIntoView().run()
   const dom = current.view.domAtPos(target).node
   const element = dom instanceof HTMLElement ? dom : dom.parentElement
-  element?.scrollIntoView({ block: 'center' })
+  element?.scrollIntoView({ block: 'start' })
 }
+
+onBeforeUnmount(() => {
+  outlineScroller?.removeEventListener('scroll', scheduleOutlineSync)
+  cancelAnimationFrame(outlineFrame)
+})
 
 defineExpose({ editor, search, reveal, replaceOne, replaceAllMatches, focusHeading })
 emit('ready')

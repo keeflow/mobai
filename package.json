@@ -131,7 +131,7 @@
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
       "identity": null,
-      "artifactName": "${productName}-${version}-${arch}.${ext}"
+      "artifactName": "mobai-${version}-${arch}.${ext}"
     },
     "dmg": {
       "title": "墨白 ${version}"

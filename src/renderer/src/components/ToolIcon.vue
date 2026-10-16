@@ -33,6 +33,13 @@ defineProps<{
     | 'undo'
     | 'redo'
     | 'save'
+    | 'sidebar-collapse'
+    | 'sidebar-expand'
+    | 'sun'
+    | 'moon'
+    | 'display'
+    | 'settings'
+    | 'close'
 }>()
 </script>
 
@@ -168,6 +175,32 @@ defineProps<{
       <path d="M5.2 2.4V6h5.2" />
       <path d="M5.4 9.2h5.2v4.4H5.4z" />
     </g>
+    <g v-else-if="name === 'sidebar-collapse'">
+      <rect x="1.8" y="2.4" width="4" height="11.2" rx="0.5" />
+      <path d="M13.4 5.3 10.2 8l3.2 2.7" />
+    </g>
+    <g v-else-if="name === 'sidebar-expand'">
+      <rect x="1.8" y="2.4" width="4" height="11.2" rx="0.5" />
+      <path d="M9.2 5.3 12.4 8 9.2 10.7" />
+    </g>
+    <g v-else-if="name === 'sun'">
+      <circle cx="8" cy="8" r="2.3" />
+      <path d="M8 2.1v1.7M8 12.2v1.7M2.1 8h1.7M12.2 8h1.7M3.9 3.9l1.2 1.2M10.9 10.9l1.2 1.2M12.1 3.9l-1.2 1.2M5.1 10.9l-1.2 1.2" />
+    </g>
+    <g v-else-if="name === 'moon'">
+      <path d="M9.8 2.4a4.8 4.8 0 1 0 3.6 8.1 3.9 3.9 0 0 1-3.6-8.1z" />
+    </g>
+    <g v-else-if="name === 'display'">
+      <rect x="2.2" y="2.6" width="11.6" height="8" rx="0.8" />
+      <path d="M6.2 13.4h3.6M8 10.6v2.8" />
+    </g>
+    <g v-else-if="name === 'settings'" class="gear">
+      <path
+        fill-rule="evenodd"
+        d="M6.45 1.15h3.1l.38 1.48c.42.14.81.36 1.15.64l1.38-.62 1.55 2.68-1.12 1.05c.1.4.16.82.16 1.24s-.06.84-.16 1.24l1.12 1.05-1.55 2.68-1.38-.62c-.34.28-.73.5-1.15.64l-.38 1.48h-3.1l-.38-1.48a4.2 4.2 0 0 1-1.15-.64l-1.38.62-1.55-2.68 1.12-1.05A4.7 4.7 0 0 1 3.9 8c0-.42.06-.84.16-1.24L2.94 5.71l1.55-2.68 1.38.62c.34-.28.73-.5 1.15-.64zm1.55 4.2a2.65 2.65 0 1 0 0 5.3 2.65 2.65 0 0 0 0-5.3z"
+      />
+    </g>
+    <path v-else-if="name === 'close'" d="M4 4 12 12M12 4 4 12" />
   </svg>
 </template>
 
@@ -209,6 +242,11 @@ svg {
 }
 
 .dot {
+  fill: currentColor;
+  stroke: none;
+}
+
+.gear path {
   fill: currentColor;
   stroke: none;
 }

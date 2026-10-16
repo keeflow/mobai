@@ -27,3 +27,14 @@ export function outlineFromMarkdown(markdown: string): OutlineHeading[] {
   }
   return headings
 }
+
+export function activeByPosition(positions: number[], marker: number): number {
+  let active = -1
+  for (let index = 0; index < positions.length; index += 1) {
+    const position = positions[index]
+    if (position === undefined || position > marker) continue
+    active = index
+  }
+  if (active < 0 && positions.length > 0) return 0
+  return active
+}

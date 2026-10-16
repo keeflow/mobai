@@ -47,7 +47,7 @@ pnpm site        # 本地预览宣传官网（website/）
 pnpm dist:mac
 ```
 
-产物在 `release/`，例如 `mobai-0.2.0-arm64.dmg`（未公证；本机可右键「打开」或在系统设置中允许）。
+产物在 `release/`，例如 `mobai-0.3.0-arm64.dmg`（未公证；本机可右键「打开」或在系统设置中允许）。
 
 ## 宣传官网
 

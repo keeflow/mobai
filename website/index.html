@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="墨白：个人 Markdown 桌面编辑器。本地打开与编辑，所见即所得，不连云，不装插件。"
+    />
+    <title>墨白 — 个人 Markdown 编辑器</title>
+    <link rel="icon" type="image/png" href="assets/icon-512.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+SC:wght@400;500;600&family=Noto+Serif+SC:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-nav">
+      <a class="nav-brand" href="#top" aria-label="墨白首页">
+        <img src="assets/icon-512.png" width="28" height="28" alt="" />
+        <span>墨白</span>
+      </a>
+      <nav class="nav-links">
+        <a href="#features">能力</a>
+        <a href="#download">下载</a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero" aria-label="产品介绍">
+        <div class="hero-atmosphere" aria-hidden="true">
+          <div class="ink-wash"></div>
+          <div class="paper-grain"></div>
+          <div class="ruled-lines"></div>
+        </div>
+
+        <div class="hero-copy">
+          <p class="brand-mark">墨白</p>
+          <h1>写字，留在本地。</h1>
+          <p class="lede">
+            个人 Markdown 桌面编辑器。所见即所得，源码随时切换——不连云，不装插件。
+          </p>
+          <div class="cta-row">
+            <a class="btn-primary" href="#download">下载 macOS</a>
+            <a class="btn-ghost" href="#features">了解能力</a>
+          </div>
+          <p class="meta">v0.1.0 · Apple Silicon</p>
+        </div>
+
+        <div class="hero-stage" aria-hidden="true">
+          <div class="stage-glow"></div>
+          <img class="hero-ink" src="assets/icon.png" alt="" />
+        </div>
+      </section>
+
+      <section id="features" class="features">
+        <header class="section-head">
+          <h2>为一个人写字准备</h2>
+          <p>打开本地文件，专心编辑。工具够用，界面安静。</p>
+        </header>
+
+        <ul class="feature-list">
+          <li>
+            <h3>双模式编辑</h3>
+            <p>所见即所得与源码模式随时切换，表格、公式、Mermaid 图一并照顾。</p>
+          </li>
+          <li>
+            <h3>本地文件库</h3>
+            <p>打开单个 Markdown 或整个文件夹，侧栏文件、大纲、最近记录与文件夹搜索。</p>
+          </li>
+          <li>
+            <h3>写作节奏</h3>
+            <p>聚焦模式、打字机滚动、查找替换、字数统计，浅色 / 深色主题随手切换。</p>
+          </li>
+          <li>
+            <h3>稳妥落盘</h3>
+            <p>原子写入、自动保存、外部修改检测与崩溃恢复。图片可落到文档旁资源目录。</p>
+          </li>
+          <li>
+            <h3>导出与打包</h3>
+            <p>导出 HTML、PDF；可选 Pandoc 导出 Word / EPUB / LaTeX。支持 TextBundle。</p>
+          </li>
+          <li>
+            <h3>没有插件墙</h3>
+            <p>命令与菜单是静态列表。不加载第三方插件，也不绑定任何云账号。</p>
+          </li>
+        </ul>
+      </section>
+
+      <section id="download" class="download">
+        <header class="section-head">
+          <h2>下载墨白</h2>
+          <p>第一个公开版本，面向 macOS Apple Silicon。</p>
+        </header>
+
+        <div class="download-block">
+          <a
+            class="btn-primary btn-large"
+            id="download-link"
+            href="https://github.com/keeflow/mobai/releases/download/v0.1.0/%E5%A2%A8%E7%99%BD-0.1.0-arm64.dmg"
+          >
+            下载 .dmg
+            <span>v0.1.0 · arm64</span>
+          </a>
+          <p class="download-note">
+            安装包托管在
+            <a href="https://github.com/keeflow/mobai/releases">GitHub Releases</a>。
+            未公证；若系统提示无法打开，请在「系统设置 → 隐私与安全性」中允许，或右键选取「打开」。
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-brand">
+        <img src="assets/icon-512.png" width="24" height="24" alt="" />
+        <span>墨白</span>
+      </div>
+      <p>个人项目 · 本地优先 · 不连云</p>
+    </footer>
+
+    <script src="script.js"></script>
+  </body>
+</html>

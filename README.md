@@ -37,9 +37,25 @@ pnpm test        # 单元测试
 pnpm typecheck   # 类型检查
 pnpm build       # 构建到 out/
 pnpm preview     # 预览构建结果
+pnpm dist:mac    # 打包 macOS arm64 .dmg 到 release/
+pnpm site        # 本地预览宣传官网（website/）
 ```
 
-当前仓库提供开发与构建到 `out/`，尚未配置安装包打包流程。
+## 安装包
+
+```bash
+pnpm dist:mac
+```
+
+产物在 `release/`，例如 `墨白-0.1.0-arm64.dmg`（未公证；本机可右键「打开」或在系统设置中允许）。
+
+## 宣传官网
+
+静态站点在 `website/`，可直接打开 `website/index.html`，或运行 `pnpm site` 本地预览。
+
+线上地址（GitHub Pages）：[https://keeflow.github.io/mobai/](https://keeflow.github.io/mobai/)
+
+推送 `website/` 或手动触发 Actions workflow `Deploy GitHub Pages` 即可更新站点。安装包通过 [GitHub Releases](https://github.com/keeflow/mobai/releases) 分发，不放进 Pages。
 
 ## 目录结构
 
@@ -50,6 +66,8 @@ src/
   renderer/    Vue 界面与编辑器
   shared/      主进程与渲染进程共用逻辑
 resources/     图标与品牌资源
+website/       宣传官网
+build/         打包图标等资源
 tests/         Vitest 测试
 docs/          设计与分析笔记（非运行时）
 ```

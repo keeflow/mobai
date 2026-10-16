@@ -1,6 +1,9 @@
 node_modules
 out
 dist
+release
+website/downloads/*.dmg
 *.local
 .DS_Store
 .pnpm-store
+build/icon.iconset

@@ -79,6 +79,13 @@ const api = {
   listRecent: (): Promise<RecentEntry[]> => ipcRenderer.invoke('recent:list'),
   openRecent: (filePath: string): Promise<OpenedFile & { recent: RecentEntry[] }> =>
     ipcRenderer.invoke('recent:open', filePath),
+  openExternal: (
+    filePath: string
+  ): Promise<
+    | (OpenedFile & { recent: RecentEntry[]; kind: 'markdown' | 'bundle' })
+    | { error: string }
+    | { detached: true; path: null; text: string; mtimeMs: number; recent: RecentEntry[] }
+  > => ipcRenderer.invoke('file:open-external', filePath),
   getSettings: (): Promise<AppSettingsPayload> => ipcRenderer.invoke('settings:get'),
   setAssetDir: (assetDir: string): Promise<{ assetDir: string; userCssPath: string | null }> =>
     ipcRenderer.invoke('settings:asset-dir', assetDir),
@@ -106,6 +113,13 @@ const api = {
     ipcRenderer.on('menu:open-recent', listener)
     return () => {
       ipcRenderer.removeListener('menu:open-recent', listener)
+    }
+  },
+  onOpenExternal: (callback: (filePath: string) => void): (() => void) => {
+    const listener = (_event: unknown, filePath: string): void => callback(filePath)
+    ipcRenderer.on('app:open-external', listener)
+    return () => {
+      ipcRenderer.removeListener('app:open-external', listener)
     }
   },
   onMenuSave: (callback: () => void): (() => void) => subscribe('menu:save', callback),

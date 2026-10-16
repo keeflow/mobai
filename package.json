@@ -1,6 +1,6 @@
 {
   "name": "mobai",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "墨白：个人 Markdown 编辑器",
   "author": "墨白",
@@ -58,6 +58,37 @@
     "appId": "app.mobai.editor",
     "productName": "墨白",
     "copyright": "Copyright © 墨白",
+    "fileAssociations": [
+      {
+        "ext": ["md", "markdown", "mmd", "mdown", "mkd", "mdwn", "mdtxt", "mdtext", "rmarkdown", "rmd", "qmd", "apib", "mdx"],
+        "name": "Markdown",
+        "description": "Markdown 文档",
+        "role": "Editor",
+        "rank": "Alternate"
+      },
+      {
+        "ext": ["txt", "text"],
+        "name": "纯文本",
+        "description": "纯文本",
+        "role": "Editor",
+        "rank": "Alternate"
+      },
+      {
+        "ext": "textpack",
+        "name": "TextPack",
+        "description": "TextPack 文档",
+        "role": "Editor",
+        "rank": "Alternate"
+      },
+      {
+        "ext": "textbundle",
+        "name": "TextBundle",
+        "description": "TextBundle 文档",
+        "role": "Editor",
+        "rank": "Alternate",
+        "isPackage": true
+      }
+    ],
     "directories": {
       "output": "release",
       "buildResources": "build"
@@ -68,6 +99,27 @@
     "mac": {
       "category": "public.app-category.productivity",
       "icon": "build/icon.png",
+      "extendInfo": {
+        "CFBundleDocumentTypes": [
+          {
+            "CFBundleTypeName": "Markdown",
+            "CFBundleTypeRole": "Editor",
+            "LSHandlerRank": "Alternate",
+            "LSItemContentTypes": ["net.daringfireball.markdown"]
+          }
+        ],
+        "UTImportedTypeDeclarations": [
+          {
+            "UTTypeIdentifier": "net.daringfireball.markdown",
+            "UTTypeDescription": "Markdown 文档",
+            "UTTypeConformsTo": ["public.plain-text"],
+            "UTTypeTagSpecification": {
+              "public.filename-extension": ["md", "markdown", "mmd", "mdown", "mkd", "mdwn", "mdtxt", "mdtext", "rmarkdown", "rmd", "qmd", "apib", "mdx"],
+              "public.mime-type": ["text/markdown"]
+            }
+          }
+        ]
+      },
       "target": [
         {
           "target": "dmg",

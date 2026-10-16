@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { matchFolderLines } from '../src/shared/folderSearch'
 import { PANDOC_INSTALL_HINT } from '../src/shared/pandoc'
-import { decodeUtf8, isInsideRoot, listMarkdownFiles, placeImageFile, saveImageAsset, searchMarkdownFolder, writeAtomic } from '../src/main/files'
+import { decodeUtf8, documentExtensions, isInsideRoot, listMarkdownFiles, placeImageFile, saveImageAsset, searchMarkdownFolder, writeAtomic } from '../src/main/files'
 
 const directories: string[] = []
 
@@ -19,6 +19,29 @@ async function tempDir(): Promise<string> {
 }
 
 describe('file helpers', () => {
+  it('registers the same document types the packaged app advertises', async () => {
+    const pkg = JSON.parse(await readFile(join(process.cwd(), 'package.json'), 'utf8')) as {
+      build: {
+        fileAssociations: Array<{ ext: string | string[]; role?: string; rank?: string; isPackage?: boolean }>
+        mac: { extendInfo: { CFBundleDocumentTypes: unknown; UTImportedTypeDeclarations: unknown } }
+      }
+    }
+    const declared = pkg.build.fileAssociations.flatMap((item) => (Array.isArray(item.ext) ? item.ext : [item.ext]))
+    expect(declared.sort()).toEqual([...documentExtensions()].sort())
+    const bundle = pkg.build.fileAssociations.find((item) => (Array.isArray(item.ext) ? item.ext : [item.ext]).includes('textbundle'))
+    expect(bundle?.isPackage).toBe(true)
+    expect(pkg.build.fileAssociations.every((item) => item.role === 'Editor' && item.rank === 'Alternate')).toBe(true)
+    const imported = pkg.build.mac.extendInfo.UTImportedTypeDeclarations as Array<{
+      UTTypeIdentifier: string
+      UTTypeTagSpecification: { 'public.filename-extension': string[] }
+    }>
+    expect(imported.map((item) => item.UTTypeIdentifier)).toContain('net.daringfireball.markdown')
+    const contentTypes = (pkg.build.mac.extendInfo.CFBundleDocumentTypes as Array<{ LSItemContentTypes?: string[] }>).flatMap(
+      (item) => item.LSItemContentTypes ?? []
+    )
+    expect(contentTypes).toContain('net.daringfireball.markdown')
+  })
+
   it('rejects invalid utf-8 and accepts chinese text', () => {
     expect(decodeUtf8(Uint8Array.from([0xff, 0xfe, 0xfd])).ok).toBe(false)
     const decoded = decodeUtf8(new TextEncoder().encode('墨白\n'))

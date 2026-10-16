@@ -210,6 +210,33 @@ export const useSessionStore = defineStore('session', () => {
     }
   }
 
+  async function openFromSystem(filePath: string): Promise<void> {
+    if (!window.api?.openExternal) {
+      setNotice('从系统打开文件需要在桌面窗口里使用。')
+      return
+    }
+    if (filePath === path.value) return
+    if (!(await prepareToLeave())) return
+    try {
+      const opened = await window.api.openExternal(filePath)
+      if ('detached' in opened && opened.detached) {
+        replaceDocument({ path: null, text: opened.text, mtimeMs: null })
+        adoptRecent(opened.recent)
+        setNotice('已从 TextPack 读入。保存时会另存为文档。')
+        return
+      }
+      if (!('text' in opened)) {
+        setNotice(opened.error)
+        return
+      }
+      replaceDocument(opened)
+      adoptRecent(opened.recent)
+      setNotice('kind' in opened && opened.kind === 'bundle' ? '已打开 TextBundle。' : '')
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : '无法打开文件')
+    }
+  }
+
   async function openRecent(filePath: string): Promise<void> {
     if (!window.api) {
       setNotice('最近文件需要在桌面窗口里打开。')
@@ -363,6 +390,7 @@ export const useSessionStore = defineStore('session', () => {
     openTextBundle,
     saveTextBundle,
     openListedFile,
+    openFromSystem,
     openRecent,
     checkExternal,
     requestClose,

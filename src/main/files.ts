@@ -9,6 +9,11 @@ export function markdownDialogExtensions(): string[] {
   return [...MARKDOWN_EXTENSIONS].map((extension) => extension.slice(1))
 }
 
+/** 打包进「墨白.app」的文档类型，须与 package.json 的 build.fileAssociations 一致，Finder「打开方式」才会列出墨白。 */
+export function documentExtensions(): string[] {
+  return [...markdownDialogExtensions(), 'textpack', 'textbundle']
+}
+
 export function isLibraryFile(filePath: string): boolean {
   return LIBRARY_EXTENSIONS.has(extname(filePath).toLowerCase())
 }

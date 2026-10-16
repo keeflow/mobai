@@ -670,6 +670,10 @@ onMounted(() => {
   api.onMenuOpenRecent?.((filePath) => {
     void session.openRecent(filePath)
   })
+  let systemOpenQueue = Promise.resolve()
+  api.onOpenExternal?.((filePath) => {
+    systemOpenQueue = systemOpenQueue.then(() => session.openFromSystem(filePath)).catch(() => undefined)
+  })
   api.onMenuSave(() => {
     void session.save()
   })
@@ -885,43 +889,76 @@ onBeforeUnmount(() => {
     </aside>
 
     <main class="flex min-w-0 flex-1 flex-col">
-      <header class="toolbar flex flex-wrap items-center gap-1 border-b px-3 py-2">
-        <div class="mr-3 min-w-0 truncate text-sm muted">{{ session.title }}</div>
-        <button class="tool" type="button" :disabled="session.editing !== 'write'" @click="run('toggleBold')"><ToolIcon name="bold" />加粗</button>
-        <button class="tool" type="button" :disabled="session.editing !== 'write'" @click="run('toggleItalic')"><ToolIcon name="italic" />斜体</button>
-        <button class="tool" type="button" :disabled="session.editing !== 'write'" @click="run('toggleStrike')"><ToolIcon name="strike" />删除线</button>
-        <button class="tool" type="button" :disabled="session.editing !== 'write'" @click="highlightMark"><ToolIcon name="highlight" />高亮</button>
-        <button class="tool" type="button" :disabled="session.editing !== 'write'" @click="horizontalRule"><ToolIcon name="rule" />分隔线</button>
-        <button class="tool" type="button" :disabled="session.editing !== 'write'" @click="emojiOpen = !emojiOpen"><ToolIcon name="emoji" />表情</button>
-        <button class="tool" type="button" :disabled="session.editing !== 'write'" @click="heading"><ToolIcon name="heading" />标题</button>
-        <button class="tool" type="button" :disabled="session.editing !== 'write'" @click="run('toggleBulletList')"><ToolIcon name="list" />列表</button>
-        <button class="tool" type="button" :disabled="session.editing !== 'write'" @click="run('toggleTaskList')"><ToolIcon name="task" />待办</button>
-        <button class="tool" type="button" :disabled="session.editing !== 'write'" @click="run('toggleBlockquote')"><ToolIcon name="quote" />引用</button>
-        <button class="tool" type="button" :disabled="session.editing !== 'write'" @click="run('toggleCodeBlock')"><ToolIcon name="code" />代码</button>
-        <button class="tool" type="button" :disabled="session.editing !== 'write'" @click="table"><ToolIcon name="table" />表格</button>
-        <button class="tool" type="button" :disabled="session.editing !== 'write'" @click="insertHtmlBlock"><ToolIcon name="html" />HTML</button>
-        <button class="tool" type="button" :class="{ selected: linkOpen }" :disabled="session.editing !== 'write'" @click="link"><ToolIcon name="link" />链接</button>
-        <button class="tool" type="button" :disabled="session.editing !== 'write'" @click="chooseImage"><ToolIcon name="image" />图片</button>
-        <button class="tool" type="button" :disabled="session.editing !== 'write'" @click="insertMath(false)"><ToolIcon name="math" />公式</button>
-        <button class="tool" type="button" :disabled="session.editing !== 'write'" @click="insertMath(true)"><ToolIcon name="math-block" />公式块</button>
-        <button class="tool" type="button" :disabled="session.editing !== 'write'" @click="insertDiagram"><ToolIcon name="diagram" />图</button>
-        <button class="tool" type="button" :disabled="session.editing !== 'write'" @click="insertFootnote"><ToolIcon name="footnote" />脚注</button>
-        <button class="tool" type="button" :class="{ selected: focusMode }" @click="toggleFocus"><ToolIcon name="focus" />聚焦</button>
-        <button class="tool" type="button" :class="{ selected: typewriter }" @click="toggleTypewriter"><ToolIcon name="typewriter" />打字机</button>
-        <button class="tool" type="button" @click="copyHtml"><ToolIcon name="copy" />复制 HTML</button>
-        <button class="tool" type="button" @click="exportPandoc('docx')"><ToolIcon name="word" />Word</button>
-        <button class="tool" type="button" @click="exportPandoc('epub')"><ToolIcon name="epub" />EPUB</button>
-        <button class="tool" type="button" @click="exportPandoc('latex')"><ToolIcon name="latex" />LaTeX</button>
-        <button class="tool" type="button" @click="printDocument"><ToolIcon name="print" />打印</button>
-        <span class="flex-1"></span>
-        <button class="tool" type="button" @click="openFind"><ToolIcon name="search" />查找</button>
-        <button class="tool" type="button" @click="toggleSource">
-          <ToolIcon :name="session.editing === 'source' ? 'preview' : 'source'" />
-          {{ session.editing === 'source' ? '预览' : '源码' }}
-        </button>
-        <button class="tool" type="button" :disabled="session.editing !== 'write'" @click="undo"><ToolIcon name="undo" />撤销</button>
-        <button class="tool" type="button" :disabled="session.editing !== 'write'" @click="redo"><ToolIcon name="redo" />重做</button>
-        <button class="tool" type="button" @click="session.save()"><ToolIcon name="save" />保存</button>
+      <header class="toolbar border-b px-3 py-2">
+        <div class="toolbar-head">
+          <div class="min-w-0 truncate text-sm muted">{{ session.title }}</div>
+          <section class="tool-group" aria-label="文档">
+            <span class="tool-group-label">文档</span>
+            <div class="tool-group-actions">
+              <button class="tool" type="button" @click="openFind"><ToolIcon name="search" />查找</button>
+              <button class="tool" type="button" @click="toggleSource">
+                <ToolIcon :name="session.editing === 'source' ? 'preview' : 'source'" />
+                {{ session.editing === 'source' ? '预览' : '源码' }}
+              </button>
+              <button class="tool" type="button" :disabled="session.editing !== 'write'" @click="undo"><ToolIcon name="undo" />撤销</button>
+              <button class="tool" type="button" :disabled="session.editing !== 'write'" @click="redo"><ToolIcon name="redo" />重做</button>
+              <button class="tool" type="button" @click="session.save()"><ToolIcon name="save" />保存</button>
+            </div>
+          </section>
+        </div>
+        <div class="tool-groups">
+          <section class="tool-group" aria-label="格式">
+            <span class="tool-group-label">格式</span>
+            <div class="tool-group-actions">
+              <button class="tool" type="button" :disabled="session.editing !== 'write'" @click="run('toggleBold')"><ToolIcon name="bold" />加粗</button>
+              <button class="tool" type="button" :disabled="session.editing !== 'write'" @click="run('toggleItalic')"><ToolIcon name="italic" />斜体</button>
+              <button class="tool" type="button" :disabled="session.editing !== 'write'" @click="run('toggleStrike')"><ToolIcon name="strike" />删除线</button>
+              <button class="tool" type="button" :disabled="session.editing !== 'write'" @click="highlightMark"><ToolIcon name="highlight" />高亮</button>
+            </div>
+          </section>
+          <section class="tool-group" aria-label="结构">
+            <span class="tool-group-label">结构</span>
+            <div class="tool-group-actions">
+              <button class="tool" type="button" :disabled="session.editing !== 'write'" @click="heading"><ToolIcon name="heading" />标题</button>
+              <button class="tool" type="button" :disabled="session.editing !== 'write'" @click="run('toggleBulletList')"><ToolIcon name="list" />列表</button>
+              <button class="tool" type="button" :disabled="session.editing !== 'write'" @click="run('toggleTaskList')"><ToolIcon name="task" />待办</button>
+              <button class="tool" type="button" :disabled="session.editing !== 'write'" @click="run('toggleBlockquote')"><ToolIcon name="quote" />引用</button>
+              <button class="tool" type="button" :disabled="session.editing !== 'write'" @click="run('toggleCodeBlock')"><ToolIcon name="code" />代码</button>
+              <button class="tool" type="button" :disabled="session.editing !== 'write'" @click="horizontalRule"><ToolIcon name="rule" />分隔线</button>
+            </div>
+          </section>
+          <section class="tool-group" aria-label="视图">
+            <span class="tool-group-label">视图</span>
+            <div class="tool-group-actions">
+              <button class="tool" type="button" :class="{ selected: focusMode }" @click="toggleFocus"><ToolIcon name="focus" />聚焦</button>
+              <button class="tool" type="button" :class="{ selected: typewriter }" @click="toggleTypewriter"><ToolIcon name="typewriter" />打字机</button>
+            </div>
+          </section>
+          <section class="tool-group" aria-label="插入">
+            <span class="tool-group-label">插入</span>
+            <div class="tool-group-actions">
+              <button class="tool" type="button" :class="{ selected: linkOpen }" :disabled="session.editing !== 'write'" @click="link"><ToolIcon name="link" />链接</button>
+              <button class="tool" type="button" :disabled="session.editing !== 'write'" @click="chooseImage"><ToolIcon name="image" />图片</button>
+              <button class="tool" type="button" :disabled="session.editing !== 'write'" @click="table"><ToolIcon name="table" />表格</button>
+              <button class="tool" type="button" :disabled="session.editing !== 'write'" @click="insertHtmlBlock"><ToolIcon name="html" />HTML</button>
+              <button class="tool" type="button" :disabled="session.editing !== 'write'" @click="insertMath(false)"><ToolIcon name="math" />公式</button>
+              <button class="tool" type="button" :disabled="session.editing !== 'write'" @click="insertMath(true)"><ToolIcon name="math-block" />公式块</button>
+              <button class="tool" type="button" :disabled="session.editing !== 'write'" @click="insertDiagram"><ToolIcon name="diagram" />图</button>
+              <button class="tool" type="button" :disabled="session.editing !== 'write'" @click="insertFootnote"><ToolIcon name="footnote" />脚注</button>
+              <button class="tool" type="button" :class="{ selected: emojiOpen }" :disabled="session.editing !== 'write'" @click="emojiOpen = !emojiOpen"><ToolIcon name="emoji" />表情</button>
+            </div>
+          </section>
+          <section class="tool-group" aria-label="导出">
+            <span class="tool-group-label">导出</span>
+            <div class="tool-group-actions">
+              <button class="tool" type="button" @click="copyHtml"><ToolIcon name="copy" />复制 HTML</button>
+              <button class="tool" type="button" @click="exportPandoc('docx')"><ToolIcon name="word" />Word</button>
+              <button class="tool" type="button" @click="exportPandoc('epub')"><ToolIcon name="epub" />EPUB</button>
+              <button class="tool" type="button" @click="exportPandoc('latex')"><ToolIcon name="latex" />LaTeX</button>
+              <button class="tool" type="button" @click="printDocument"><ToolIcon name="print" />打印</button>
+            </div>
+          </section>
+        </div>
       </header>
       <form v-if="linkOpen" class="find-bar" @submit.prevent="applyLink">
         <label>文字 <input id="link-text" v-model="linkText" class="find-input" type="text" placeholder="显示的文字" /></label>
@@ -1003,6 +1040,59 @@ onBeforeUnmount(() => {
   border-radius: 9px;
   flex-shrink: 0;
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--line) 80%, transparent);
+}
+
+.toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.toolbar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.tool-groups {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0.4rem;
+}
+
+.tool-group {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  padding: 0.12rem 0.28rem 0.12rem 0;
+  border: 1px solid var(--line);
+  border-radius: 0.55rem;
+  background: color-mix(in srgb, var(--panel) 62%, transparent);
+}
+
+.tool-group-label {
+  flex-shrink: 0;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  padding: 0 0.55rem;
+  border-right: 1px solid var(--line);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.tool-group-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.05rem;
+  min-width: 0;
 }
 
 .tool,

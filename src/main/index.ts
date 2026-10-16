@@ -48,8 +48,11 @@ protocol.registerSchemesAsPrivileged([
 ])
 
 const allowedRoots = new Set<string>()
+const systemOpenPaths = new Set<string>()
+const pendingOpens: string[] = []
 let mainWindow: BrowserWindow | null = null
 let allowClose = false
+let windowReady = false
 let recoveries: RecoveryCopy[] = []
 
 function allowPath(filePath: string): void {
@@ -84,6 +87,7 @@ function assertAllowed(filePath: string): string {
 }
 
 function createWindow(): void {
+  windowReady = false
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -106,10 +110,19 @@ function createWindow(): void {
     mainWindow?.webContents.send('app:request-close')
   })
 
-  mainWindow.webContents.on('did-finish-load', () => {
+  mainWindow.on('closed', () => {
+    windowReady = false
+    mainWindow = null
+  })
+
+  const created = mainWindow
+  created.webContents.on('did-finish-load', () => {
     void pendingRecoveries().then((pending) => {
+      if (created.isDestroyed() || mainWindow !== created) return
       recoveries = pending
-      publishRecovery()
+      windowReady = true
+      if (pendingOpens.length === 0) publishRecovery()
+      flushOpens()
     })
   })
 
@@ -213,6 +226,59 @@ async function applyApplicationMenu(): Promise<void> {
   )
 }
 
+function enqueueOpen(filePath: string): void {
+  const full = resolve(filePath)
+  systemOpenPaths.add(full)
+  if (pendingOpens[pendingOpens.length - 1] !== full) pendingOpens.push(full)
+  if (app.isReady() && (!mainWindow || mainWindow.isDestroyed())) createWindow()
+  flushOpens()
+}
+
+function flushOpens(): void {
+  const target = mainWindow
+  if (!windowReady || !target || target.isDestroyed() || pendingOpens.length === 0) return
+  if (target.isMinimized()) target.restore()
+  target.show()
+  target.focus()
+  for (const filePath of pendingOpens.splice(0)) target.webContents.send('app:open-external', filePath)
+}
+
+async function loadChosenPath(
+  filePath: string,
+  unsupported: string
+): Promise<
+  | { detached: true; path: null; text: string; mtimeMs: number; recent: RecentEntry[] }
+  | { path: string; text: string; mtimeMs: number; recent: RecentEntry[]; kind: 'markdown' | 'bundle' }
+  | { error: string }
+> {
+  const full = resolve(filePath)
+  try {
+    if (full.toLowerCase().endsWith('.textpack')) {
+      const unpacked = await unpackTextPack(full, join(app.getPath('temp'), `mobai-pack-${Date.now()}`))
+      return { detached: true, path: null, text: unpacked.text, mtimeMs: unpacked.mtimeMs, recent: await listRecent() }
+    }
+    if (full.toLowerCase().endsWith('.textbundle')) {
+      allowRoot(full)
+      const loaded = await readTextBundle(full)
+      allowPath(loaded.path)
+      const recent = await noteRecent(loaded.path)
+      return { ...loaded, recent, kind: 'bundle' }
+    }
+    if (!isMarkdownFile(full)) return { error: unsupported }
+    allowPath(full)
+    const loaded = await readUtf8File(full)
+    const recent = await noteRecent(full)
+    return { path: full, ...loaded, recent, kind: 'markdown' }
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : '无法打开这个文件。' }
+  }
+}
+
+app.on('open-file', (event, filePath) => {
+  event.preventDefault()
+  enqueueOpen(filePath)
+})
+
 app.whenReady().then(() => {
   protocol.handle('media', (request) => {
     const url = new URL(request.url)
@@ -249,17 +315,14 @@ ipcMain.handle('file:open', async () => {
   if (result.canceled || result.filePaths.length === 0) return null
   const filePath = result.filePaths[0]
   if (!filePath) return null
-  if (filePath.toLowerCase().endsWith('.textpack')) {
-    const unpacked = await unpackTextPack(filePath, join(app.getPath('temp'), `mobai-pack-${Date.now()}`))
-    return { detached: true as const, path: null, text: unpacked.text, mtimeMs: unpacked.mtimeMs, recent: await listRecent() }
-  }
-  if (!isMarkdownFile(filePath)) {
-    return { error: '请选择 Markdown 文件。' }
-  }
-  allowPath(filePath)
-  const loaded = await readUtf8File(filePath)
-  const recent = await noteRecent(filePath)
-  return { path: filePath, ...loaded, recent }
+  return loadChosenPath(filePath, '请选择 Markdown 文件。')
+})
+
+ipcMain.handle('file:open-external', async (_event, filePath: string) => {
+  if (typeof filePath !== 'string' || filePath.trim() === '') return { error: '缺少文件路径。' }
+  const full = resolve(filePath)
+  if (!systemOpenPaths.has(full)) return { error: '这个文件不是从系统打开的。' }
+  return loadChosenPath(full, '墨白只能打开 Markdown、纯文本、TextPack 或 TextBundle。')
 })
 
 ipcMain.handle('folder:open', async () => {

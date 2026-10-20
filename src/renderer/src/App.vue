@@ -727,6 +727,7 @@ onBeforeUnmount(() => {
       @open-listed="session.openListedFile($event)"
       @open-recent="session.openRecent($event)"
       @open-recent-folder="session.openRecentFolder($event)"
+      @drop-file="(file, more) => session.openDropped(file, more)"
       @show-heading="showHeading"
       @open-folder-hit="openFolderHit"
       @notice="session.setNotice($event)"

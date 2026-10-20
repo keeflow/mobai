@@ -79,6 +79,13 @@ const api = {
   listRecent: (): Promise<RecentEntry[]> => ipcRenderer.invoke('recent:list'),
   openRecent: (filePath: string): Promise<OpenedFile & { recent: RecentEntry[] }> =>
     ipcRenderer.invoke('recent:open', filePath),
+  openDropped: (
+    filePath: string
+  ): Promise<
+    | (OpenedFile & { recent: RecentEntry[]; kind: 'markdown' | 'bundle' })
+    | { error: string }
+    | { detached: true; path: null; text: string; mtimeMs: number; recent: RecentEntry[] }
+  > => ipcRenderer.invoke('file:open-dropped', filePath),
   openExternal: (
     filePath: string
   ): Promise<

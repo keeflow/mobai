@@ -1,9 +1,7 @@
 import { copyFile, mkdir, readdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
+import { fileExtension, LIBRARY_EXTENSIONS, MARKDOWN_EXTENSIONS } from '../shared/documents'
 import { matchFolderLines, type FolderHit, type FolderSearchOptions } from '../shared/folderSearch'
 import { basename, dirname, extname, join, relative, resolve, sep } from 'node:path'
-
-const LIBRARY_EXTENSIONS = new Set(['.md', '.markdown', '.mmd', '.mdown', '.mkd', '.mdwn', '.mdtxt', '.mdtext', '.rmarkdown', '.rmd', '.qmd'])
-const MARKDOWN_EXTENSIONS = new Set([...LIBRARY_EXTENSIONS, '.txt', '.text', '.apib', '.mdx'])
 
 export function markdownDialogExtensions(): string[] {
   return [...MARKDOWN_EXTENSIONS].map((extension) => extension.slice(1))
@@ -15,12 +13,12 @@ export function documentExtensions(): string[] {
 }
 
 export function isLibraryFile(filePath: string): boolean {
-  return LIBRARY_EXTENSIONS.has(extname(filePath).toLowerCase())
+  return LIBRARY_EXTENSIONS.has(fileExtension(filePath))
 }
 const SKIP_DIRECTORIES = new Set(['node_modules', '.git', 'assets'])
 
 export function isMarkdownFile(filePath: string): boolean {
-  return MARKDOWN_EXTENSIONS.has(extname(filePath).toLowerCase())
+  return MARKDOWN_EXTENSIONS.has(fileExtension(filePath))
 }
 
 export function decodeUtf8(bytes: Uint8Array): { ok: true; text: string } | { ok: false; error: string } {

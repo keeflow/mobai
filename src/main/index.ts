@@ -325,6 +325,11 @@ ipcMain.handle('file:open-external', async (_event, filePath: string) => {
   return loadChosenPath(full, '墨白只能打开 Markdown、纯文本、TextPack 或 TextBundle。')
 })
 
+ipcMain.handle('file:open-dropped', async (_event, filePath: string) => {
+  if (typeof filePath !== 'string' || filePath.trim() === '') return { error: '缺少文件路径。' }
+  return loadChosenPath(filePath, '只能打开 Markdown 文档。')
+})
+
 ipcMain.handle('folder:open', async () => {
   const result = await dialog.showOpenDialog({
     title: '打开文件夹',

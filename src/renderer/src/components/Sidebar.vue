@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { collectDocumentFilesFromDataTransfer } from '@shared/documents'
 import type { FindOptions } from '@shared/find'
 import type { FolderHit, FolderSearchOptions } from '@shared/folderSearch'
 import { folderSearchError } from '@shared/folderSearch'
+import { dataTransferHasFiles } from '@shared/images'
 import { outlineFromMarkdown } from '@shared/outline'
 import type { RecentEntry } from '@shared/recent'
 import type { ImagePlacement } from '@shared/settings'
@@ -52,6 +54,7 @@ const emit = defineEmits<{
   showHeading: [index: number]
   openFolderHit: [payload: { hit: FolderHit; options: FindOptions }]
   notice: [message: string]
+  dropFile: [file: File, more: boolean]
   saveImageMode: [mode: ImagePlacement]
   saveAssetDir: []
   chooseCss: []
@@ -78,6 +81,7 @@ function readWidth(): number {
 const panel = ref<SidePanel>(readPanel())
 const width = ref(readWidth())
 const resizing = ref(false)
+const draggingDocument = ref(false)
 let dragMove: ((event: PointerEvent) => void) | null = null
 let dragEnd: ((event: PointerEvent) => void) | null = null
 const fileQuery = ref('')
@@ -166,7 +170,49 @@ function nudgeWidth(event: KeyboardEvent): void {
 function selectPanel(next: SidePanel): void {
   panel.value = next
   localStorage.setItem('mobai-panel', next)
+  draggingDocument.value = false
   if (next === 'search') requestAnimationFrame(() => document.getElementById('folder-query')?.focus())
+}
+
+function dragStartsOnSidebar(event: DragEvent): boolean {
+  return panel.value === 'files' && dataTransferHasFiles(event.dataTransfer)
+}
+
+function onDocumentDragEnter(event: DragEvent): void {
+  if (!dragStartsOnSidebar(event)) return
+  draggingDocument.value = true
+}
+
+function onDocumentDragOver(event: DragEvent): void {
+  if (!dragStartsOnSidebar(event)) return
+  event.preventDefault()
+  draggingDocument.value = true
+  if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy'
+}
+
+function onDocumentDragLeave(event: DragEvent): void {
+  const host = event.currentTarget
+  const next = event.relatedTarget
+  if (host instanceof Node && next instanceof Node && host.contains(next)) return
+  draggingDocument.value = false
+}
+
+function onDocumentDrop(event: DragEvent): void {
+  const accept = dragStartsOnSidebar(event)
+  draggingDocument.value = false
+  if (!dataTransferHasFiles(event.dataTransfer)) return
+  event.preventDefault()
+  if (!accept) {
+    emit('notice', '请先切到「文件」，再把 Markdown 拖到侧栏打开。')
+    return
+  }
+  const documents = collectDocumentFilesFromDataTransfer(event.dataTransfer)
+  const file = documents[0]
+  if (!file) {
+    emit('notice', '只能把 Markdown 文档拖到文件栏打开。')
+    return
+  }
+  emit('dropFile', file, documents.length > 1)
 }
 
 function toggleDir(id: string): void {
@@ -278,7 +324,16 @@ defineExpose({ selectPanel })
 </script>
 
 <template>
-  <aside class="sidebar flex shrink-0 flex-col border-r" :style="{ width: `${width}px` }" :data-resizing="resizing ? 'yes' : 'no'">
+  <aside
+    class="sidebar flex shrink-0 flex-col border-r"
+    :style="{ width: `${width}px` }"
+    :data-resizing="resizing ? 'yes' : 'no'"
+    :data-dropping="draggingDocument ? 'yes' : 'no'"
+    @dragenter="onDocumentDragEnter"
+    @dragover="onDocumentDragOver"
+    @dragleave="onDocumentDragLeave"
+    @drop="onDocumentDrop"
+  >
     <div class="sidebar-brand">
       <img class="brand-logo" :src="logoUrl" width="32" height="32" alt="" />
       <div class="min-w-0 flex-1">
@@ -380,6 +435,7 @@ defineExpose({ selectPanel })
       @open-recent="emit('openRecent', $event)"
       @open-recent-folder="emit('openRecentFolder', $event)"
     />
+    <div v-if="draggingDocument" class="sidebar-drop-hint">放开以打开 Markdown</div>
     <div
       class="sidebar-resize"
       role="separator"
@@ -416,6 +472,26 @@ defineExpose({ selectPanel })
 
 .sidebar {
   position: relative;
+}
+
+.sidebar[data-dropping='yes'] {
+  background: color-mix(in srgb, var(--accent) 8%, var(--paper));
+}
+
+.sidebar-drop-hint {
+  pointer-events: none;
+  position: absolute;
+  inset: 0.55rem;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px dashed color-mix(in srgb, var(--accent) 70%, transparent);
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--paper) 84%, var(--accent));
+  color: var(--ink);
+  font-size: 0.92rem;
+  letter-spacing: 0.02em;
 }
 
 .icon-tool {

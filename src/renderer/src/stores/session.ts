@@ -210,31 +210,61 @@ export const useSessionStore = defineStore('session', () => {
     }
   }
 
+  type ChosenOpen =
+    | { detached: true; path: null; text: string; mtimeMs: number; recent?: RecentEntry[] }
+    | { path: string; text: string; mtimeMs: number; recent?: RecentEntry[]; kind?: 'markdown' | 'bundle' }
+    | { error: string }
+
+  function presentChosen(opened: ChosenOpen): boolean {
+    if ('detached' in opened && opened.detached) {
+      replaceDocument({ path: null, text: opened.text, mtimeMs: null })
+      adoptRecent(opened.recent)
+      setNotice('已从 TextPack 读入。保存时会另存为文档。')
+      return true
+    }
+    if (!('text' in opened)) {
+      setNotice(opened.error)
+      return false
+    }
+    replaceDocument(opened)
+    adoptRecent(opened.recent)
+    setNotice('kind' in opened && opened.kind === 'bundle' ? '已打开 TextBundle。' : '')
+    return true
+  }
+
+  async function openChosenPath(filePath: string, load: (filePath: string) => Promise<ChosenOpen>): Promise<boolean> {
+    if (filePath === path.value) return true
+    if (!(await prepareToLeave())) return false
+    try {
+      return presentChosen(await load(filePath))
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : '无法打开文件')
+      return false
+    }
+  }
+
   async function openFromSystem(filePath: string): Promise<void> {
-    if (!window.api?.openExternal) {
+    const api = window.api
+    if (!api?.openExternal) {
       setNotice('从系统打开文件需要在桌面窗口里使用。')
       return
     }
-    if (filePath === path.value) return
-    if (!(await prepareToLeave())) return
-    try {
-      const opened = await window.api.openExternal(filePath)
-      if ('detached' in opened && opened.detached) {
-        replaceDocument({ path: null, text: opened.text, mtimeMs: null })
-        adoptRecent(opened.recent)
-        setNotice('已从 TextPack 读入。保存时会另存为文档。')
-        return
-      }
-      if (!('text' in opened)) {
-        setNotice(opened.error)
-        return
-      }
-      replaceDocument(opened)
-      adoptRecent(opened.recent)
-      setNotice('kind' in opened && opened.kind === 'bundle' ? '已打开 TextBundle。' : '')
-    } catch (error) {
-      setNotice(error instanceof Error ? error.message : '无法打开文件')
+    await openChosenPath(filePath, (target) => api.openExternal(target))
+  }
+
+  async function openDropped(file: File, more = false): Promise<void> {
+    const api = window.api
+    if (!api?.openDropped) {
+      setNotice('拖入打开需要在桌面窗口里使用。')
+      return
     }
+    const filePath = diskPathOf(file)
+    if (!filePath) {
+      setNotice('读不到这个文件的路径。请从访达拖入 Markdown 文档。')
+      return
+    }
+    const opened = await openChosenPath(filePath, (target) => api.openDropped(target))
+    if (opened && more && !notice.value) setNotice('一次只能打开一个文档，已打开第一个。')
   }
 
   async function openRecent(filePath: string): Promise<void> {
@@ -391,6 +421,7 @@ export const useSessionStore = defineStore('session', () => {
     saveTextBundle,
     openListedFile,
     openFromSystem,
+    openDropped,
     openRecent,
     checkExternal,
     requestClose,
